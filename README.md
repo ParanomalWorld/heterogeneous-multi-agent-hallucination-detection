@@ -16,3 +16,23 @@ Set `HF_HUB_OFFLINE=1` (model is cached under ~/.cache/huggingface).
 - build_index.py    : clean + dedupe + embed + FAISS (IndexFlatIP, cosine) -> index/
 - retriever_agent.py: RetrieverAgent.retrieve(query, k, lang, department) -> JSON evidence + latency_ms
 `--dummy` flag = pipeline smoke test only (no semantics).
+
+
+## October 2026 Task — Setup & Execution
+
+### Objective
+
+Build a local multilingual retrieval system for Maharashtra Government policy/GR documents.
+
+Pipeline:
+
+Policy Data → Cleaning → Chunking → Embeddings → FAISS Index → Retriever Agent
+
+### Setup
+
+Create virtual environment:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+
