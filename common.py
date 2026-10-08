@@ -1,4 +1,6 @@
 """Shared helpers: config, text normalisation, embedder (real + dummy for smoke tests)."""
+import os
+os.environ.setdefault("HF_HUB_OFFLINE", "1")   # use cached models, never ping the internet
 import hashlib, re, unicodedata
 from pathlib import Path
 import numpy as np
