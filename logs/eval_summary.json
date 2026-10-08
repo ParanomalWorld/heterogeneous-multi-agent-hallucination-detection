@@ -1,0 +1,12 @@
+{
+  "model": "llama-3.2-3b",
+  "n_in_scope": 12,
+  "n_out_of_scope": 2,
+  "hit@1": 0.667,
+  "hit@3": 0.917,
+  "MRR": 0.792,
+  "mean_retrieval_ms": 334.8,
+  "mean_generation_ms": 56200.8,
+  "abstain_rate_in_scope": 0.0,
+  "abstain_rate_out_of_scope": 0.5
+}

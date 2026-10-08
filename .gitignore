@@ -35,3 +35,5 @@ models/*.safetensors
 # OS
 .DS_Store
 Thumbs.db
+# Local Llama model files
+models/*.gguf

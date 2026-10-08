@@ -1,0 +1,2 @@
+# Install llama-cpp-python separately using the prebuilt wheel (see README_NOV.md); do NOT pip install it from source on Windows.
+huggingface_hub
