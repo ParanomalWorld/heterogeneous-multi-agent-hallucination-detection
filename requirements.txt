@@ -1,0 +1,15 @@
+numpy
+faiss-cpu
+sentence-transformers
+torch
+tqdm
+huggingface_hub
+# --- Phase 2 (Verifier / Critic / Orchestrator / Web app) ---
+transformers>=4.40
+sentencepiece          # mDeBERTa / DeBERTa-v3 tokenizer
+protobuf
+langgraph>=0.2         # orchestration graph (falls back to built-in runner if missing)
+fastapi
+uvicorn
+matplotlib             # paper figures from hallu_bench.py
+# llama-cpp-python is installed separately with a prebuilt wheel (see SETUP.md / setup.ps1)

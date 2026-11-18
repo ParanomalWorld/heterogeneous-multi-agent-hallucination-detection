@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NitiSatya · Offline Policy Hallucination Detector</title>
+<style>
+:root{
+  --ink:#1b1f2a; --muted:#5d6475; --line:#e3e6ee; --bg:#f5f6f9; --card:#fff;
+  --brand:#23306b; --brand2:#3d4fa8; --accent:#e8edff;
+  --ok:#137a43; --okbg:#e3f6ea; --warn:#9a6200; --warnbg:#fff3d6; --bad:#b42318; --badbg:#fde8e6;
+  --gray:#5d6475; --graybg:#eef0f4; --blue:#1f5fbf; --bluebg:#e6efff;
+  --r:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI","Nirmala UI","Noto Sans Devanagari","Mangal",system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:15px;line-height:1.5}
+header{background:var(--brand);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+header h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
+header .sub{font-size:12.5px;opacity:.8}
+.pill{font-size:12px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.14);white-space:nowrap}
+.pill .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#f5b400;vertical-align:1px}
+.pill.ready .dot{background:#3ddc84}.pill.error .dot{background:#ff5a4f}
+nav{margin-left:auto;display:flex;gap:4px}
+nav button{background:none;border:0;color:#fff;opacity:.75;padding:8px 14px;border-radius:8px;font:inherit;cursor:pointer}
+nav button.on{opacity:1;background:rgba(255,255,255,.15)}
+main{max-width:1320px;margin:0 auto;padding:22px 24px 60px}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:18px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:0 0 12px;font-weight:650}
+textarea{width:100%;min-height:78px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:inherit;font-size:16px;resize:vertical}
+textarea:focus,select:focus,input:focus{outline:2px solid var(--brand2);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.chip{border:1px solid var(--line);background:#fafbfd;border-radius:99px;padding:4px 11px;font-size:13px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip:hover{border-color:var(--brand2);background:var(--accent)}
+.chip.oos{border-style:dashed}
+.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+@media(max-width:700px){.controls{grid-template-columns:1fr 1fr}}
+label.f{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+select,input[type=number]{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+.row{display:flex;gap:10px;align-items:center;margin-top:14px}
+.btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:11px 22px;font:inherit;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--line)}
+.hint{font-size:12.5px;color:var(--muted)}
+/* pipeline */
+.pipe{display:flex;align-items:stretch;gap:0;overflow-x:auto}
+.agent{flex:1;min-width:112px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fafbfd;transition:.2s}
+.agent b{display:block;font-size:13.5px}.agent small{color:var(--muted);font-size:11.5px;display:block}
+.agent .st{font-size:12px;margin-top:4px;color:var(--muted)}
+.agent.running{border-color:var(--brand2);background:var(--accent);box-shadow:0 0 0 3px rgba(61,79,168,.12)}
+.agent.done{border-color:#b9dcc6;background:#f3fbf6}.agent.skipped{opacity:.45}
+.arrow{align-self:center;color:#b3b8c6;padding:0 5px;font-size:18px}
+.budget{margin-top:14px}.bar{height:8px;border-radius:9px;background:var(--graybg);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--brand2);transition:width .3s}
+.bar.over i{background:var(--bad)}
+/* answer */
+.verdict{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.badge{font-weight:700;padding:7px 14px;border-radius:9px;font-size:15px}
+.V-VERIFIED{background:var(--okbg);color:var(--ok)}.V-PARTIALLY_VERIFIED{background:var(--warnbg);color:var(--warn)}
+.V-HALLUCINATED{background:var(--badbg);color:var(--bad)}.V-UNVERIFIED{background:var(--graybg);color:var(--gray)}
+.V-ABSTAINED{background:var(--bluebg);color:var(--blue)}.V-NOT_CHECKED{background:var(--graybg);color:var(--gray)}
+.metric{font-size:12.5px;color:var(--muted)}.metric b{color:var(--ink);font-size:15px;display:block}
+.answer{font-size:17px;line-height:1.75;min-height:52px;white-space:pre-wrap}
+.answer .cursor{display:inline-block;width:8px;height:18px;background:var(--brand2);vertical-align:-3px;animation:b 1s infinite}
+@keyframes b{50%{opacity:0}}
+.claim{border-radius:5px;padding:1px 3px;cursor:help;border-bottom:2px solid transparent}
+.T-SUPPORTED{background:var(--okbg);border-color:#7cc79b}
+.T-NUMERIC_FABRICATION,.T-CONTRADICTION{background:var(--badbg);border-color:#f09a91}
+.T-UNSUPPORTED,.T-UNVERIFIABLE{background:var(--warnbg);border-color:#efc56b}
+.T-CITATION_MISMATCH{background:var(--bluebg);border-color:#8fb3ef}
+.T-UNCHECKED{background:var(--graybg);border-color:#c7cbd6}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+table.claims{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+table.claims td,table.claims th{border-top:1px solid var(--line);padding:8px 6px;vertical-align:top;text-align:left}
+table.claims th{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap}
+.probs{display:flex;height:7px;border-radius:5px;overflow:hidden;width:110px;margin-top:5px;background:var(--graybg)}
+.probs i:nth-child(1){background:#2fa463}.probs i:nth-child(2){background:#c9ccd6}.probs i:nth-child(3){background:#e0533f}
+/* evidence */
+.ev{border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:10px;font-size:14px}
+.ev .meta{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+.ev .num{font-weight:700;color:var(--brand)}
+.ev .txt{max-height:7.5em;overflow:hidden;position:relative;cursor:pointer}
+.ev .txt.open{max-height:none}
+.ev mark{background:#fff0b3;padding:0 1px}
+/* trace */
+.trace{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.3px;max-height:340px;overflow:auto}
+.trace div{padding:4px 0;border-bottom:1px dashed var(--line);display:grid;grid-template-columns:58px 92px 1fr;gap:8px}
+.trace .t{color:var(--muted)}.trace .a{color:var(--brand2);font-weight:600}
+.empty{color:var(--muted);font-size:14px}
+.err{background:var(--badbg);color:var(--bad);padding:10px 12px;border-radius:9px;margin-top:10px}
+/* tables */
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:8px;text-align:left}
+table.t th{color:var(--muted);font-size:12px;text-transform:uppercase}
+table.t tr.click{cursor:pointer}table.t tr.click:hover{background:#fafbfd}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{font-size:22px;display:block}.kpi span{font-size:12px;color:var(--muted)}
+.md{white-space:pre-wrap;font-family:Consolas,monospace;font-size:12.5px;background:#fafbfd;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto}
+img.fig{max-width:100%;border:1px solid var(--line);border-radius:10px;margin:6px 10px 6px 0}
+.hide{display:none}
+.arch{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.arch .agent{min-width:0}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>NitiSatya — Policy Answer Verifier</h1>
+    <div class="sub">Heterogeneous multi-agent hallucination detection · Maharashtra GRs · मराठी / English · 100% offline · CPU</div>
+  </div>
+  <span id="status" class="pill"><span class="dot"></span><span id="statusText">connecting…</span></span>
+  <nav>
+    <button class="on" data-tab="ask">Ask</button>
+    <button data-tab="history">History</button>
+    <button data-tab="eval">Evaluation</button>
+    <button data-tab="about">Architecture</button>
+  </nav>
+</header>
+
+<main>
+<!-- ================= ASK ================= -->
+<section id="tab-ask">
+ <div class="grid">
+  <div>
+   <div class="card">
+    <h2>Citizen question · नागरिकांचा प्रश्न</h2>
+    <textarea id="q" placeholder="उदा. अंगणवाडी सेविकांना मानधन किती मिळते?  /  e.g. What subsidy is given for a new irrigation well?"></textarea>
+    <div class="chips" id="chips"></div>
+    <div class="controls">
+     <div><label class="f">Verification policy</label><select id="policy"></select></div>
+     <div><label class="f">Latency budget (s)</label><input id="budget" type="number" min="0" step="5"></div>
+     <div><label class="f">Evidence chunks (k)</label><input id="k" type="number" min="1" max="8" value="3"></div>
+     <div><label class="f">Demo: inject hallucination</label>
+      <select id="inject"><option value="none">Off (real answer)</option><option value="number">Change a number</option>
+      <option value="negation">Negate a statement</option><option value="fabricate">Add invented rule</option></select></div>
+    </div>
+    <div class="row"><button class="btn" id="go">Ask &amp; verify</button>
+     <span class="hint">Ctrl+Enter · Adaptive = proposed method; others are baselines for comparison.</span></div>
+    <div id="err"></div>
+   </div>
+
+   <div class="card">
+    <h2>Agent pipeline</h2>
+    <div class="pipe" id="pipe"></div>
+    <div class="budget"><div class="hint" id="budgetText">Latency budget</div><div class="bar" id="bar"><i></i></div></div>
+   </div>
+
+   <div class="card">
+    <h2>Answer · उत्तर</h2>
+    <div class="verdict" id="verdict"></div>
+    <div class="answer" id="answer"><span class="empty">Ask a question to see an evidence-grounded answer with claim-level verification.</span></div>
+    <div class="legend">
+     <span><i class="T-SUPPORTED"></i>Supported</span><span><i class="T-NUMERIC_FABRICATION"></i>Fabricated number / contradiction</span>
+     <span><i class="T-UNSUPPORTED"></i>Unsupported / uncertain</span><span><i class="T-CITATION_MISMATCH"></i>Citation mismatch</span>
+     <span><i class="T-UNCHECKED"></i>Unchecked (budget)</span>
+    </div>
+    <div id="claimsBox"></div>
+    <div class="row hide" id="dl"><button class="btn ghost" id="dlBtn">Download audit report (JSON)</button></div>
+   </div>
+  </div>
+
+  <div>
+   <div class="card"><h2>Retrieved evidence (Government Resolutions)</h2><div id="evidence"><span class="empty">—</span></div></div>
+   <div class="card"><h2>Decision trace</h2><div class="trace" id="trace"><span class="empty">—</span></div></div>
+  </div>
+ </div>
+</section>
+
+<!-- ================= HISTORY ================= -->
+<section id="tab-history" class="hide">
+ <div class="card"><h2>Recent queries (logs/orchestrator_runs.jsonl)</h2><div id="hist"></div></div>
+</section>
+
+<!-- ================= EVAL ================= -->
+<section id="tab-eval" class="hide">
+ <div class="card"><h2>Live usage</h2><div id="live" class="kpis"></div></div>
+ <div class="card"><h2>MH-PolicyHalluBench (python hallu_bench.py)</h2><div id="bench"></div></div>
+ <div class="card"><h2>End-to-end with local LLM (python evaluate_e2e.py)</h2><div id="e2e"></div></div>
+</section>
+
+<!-- ================= ABOUT ================= -->
+<section id="tab-about" class="hide">
+ <div class="card">
+  <h2>Five-agent architecture</h2>
+  <div class="arch">
+   <div class="agent"><b>Orchestrator</b><small>LangGraph state machine. Routes on retrieval score, generator confidence, claim risk and the remaining latency budget. Plans fast / deep verification, degrades gracefully to "Unverified".</small></div>
+   <div class="agent"><b>Retriever</b><small>multilingual-e5-small + FAISS over Maharashtra GR chunks. Cross-lingual (English question → Marathi evidence).</small></div>
+   <div class="agent"><b>Generator</b><small>Quantised Llama (GGUF Q4_K_M, llama.cpp, CPU). Grounded prompt with [n] citations and NOT_FOUND abstention; token-probability confidence.</small></div>
+   <div class="agent"><b>Verifier</b><small>Heterogeneous cascade: Tier-0 numeric/lexical heuristics (ms) → Tier-1 multilingual mDeBERTa NLI (int8) → Tier-2 deep multi-window / DeBERTa-v3-large NLI only for uncertain claims.</small></div>
+   <div class="agent"><b>Critic</b><small>Rule-based, auditable taxonomy: numeric fabrication, contradiction, unsupported, citation mismatch, unverifiable, unchecked. Verdict + risk. Detection only, never rewrites.</small></div>
+  </div>
+  <p class="hint" id="models"></p>
+ </div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const AG = [["orchestrator","Orchestrator","routing + budget"],["retriever","Retriever","FAISS · e5"],
+            ["generator","Generator","Llama GGUF"],["verifier","Verifier","Tier-0/1/2 NLI"],["critic","Critic","risk + type"]];
+const TYPE_LABEL = {SUPPORTED:"Supported",NUMERIC_FABRICATION:"Fabricated number",CONTRADICTION:"Contradiction",
+  UNSUPPORTED:"Unsupported",UNVERIFIABLE:"Uncertain",CITATION_MISMATCH:"Citation mismatch",UNCHECKED:"Unchecked"};
+let H = {}, last = null, timer = null, t0 = 0, budget = null;
+
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+async function health(){
+  try{
+    H = await (await fetch("/api/health")).json();
+    const st = $("#status"); st.className = "pill " + (H.status==="ready"?"ready":H.status==="error"?"error":"");
+    $("#statusText").textContent = H.status==="ready"
+      ? `ready · ${H.mock?"MOCK models":H.llm} · ${H.index_vectors} chunks · ${H.engine}` + (H.busy?" · busy":"")
+      : (H.status==="error" ? "error: "+H.error : H.status+"…");
+    $("#go").disabled = H.status!=="ready";
+    $("#models").textContent = `LLM: ${H.llm} · Tier-1 NLI: ${H.nli_tier1} · Tier-2 NLI: ${H.nli_tier2||"off"}`;
+    if(!$("#policy").options.length){
+      H.policies.forEach(p=>$("#policy").add(new Option(p+(p===H.default_policy?" (proposed)":""),p)));
+      $("#budget").value = H.default_budget_s;
+    }
+    if(H.status!=="ready" && H.status!=="error") setTimeout(health,1500);
+  }catch(e){ $("#statusText").textContent="server offline"; setTimeout(health,3000); }
+}
+
+async function examples(){
+  const ex = await (await fetch("/api/examples")).json();
+  $("#chips").innerHTML = ex.slice(0,10).map(e=>`<span class="chip ${e.in_scope?"":"oos"}" title="${e.in_scope?"":"out-of-scope test"}">${esc(e.query)}</span>`).join("");
+  document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{$("#q").value=c.textContent;$("#q").focus()});
+}
+
+function resetUI(){
+  $("#pipe").innerHTML = AG.map((a,i)=>(i?'<span class="arrow">›</span>':"")+
+    `<div class="agent" id="ag-${a[0]}"><b>${a[1]}</b><small>${a[2]}</small><div class="st">idle</div></div>`).join("");
+  $("#answer").innerHTML = '<span class="cursor"></span>'; $("#verdict").innerHTML=""; $("#claimsBox").innerHTML="";
+  $("#evidence").innerHTML='<span class="empty">retrieving…</span>'; $("#trace").innerHTML=""; $("#err").innerHTML="";
+  $("#dl").classList.add("hide"); last=null;
+}
+function agent(name,status,extra){
+  const el=$("#ag-"+name); if(!el) return;
+  el.className="agent "+status; el.querySelector(".st").textContent = status==="done" ? `done · ${extra??""}` : status;
+}
+function tick(){
+  const el=(performance.now()-t0)/1000;
+  $("#budgetText").textContent = budget ? `Latency budget: ${el.toFixed(1)} s of ${budget} s` : `Elapsed ${el.toFixed(1)} s (no budget)`;
+  const pct = budget ? Math.min(100, el/budget*100) : 0;
+  $("#bar i").style.width = pct+"%"; $("#bar").classList.toggle("over", budget && el>budget);
+}
+
+let answerText = "";
+function onEvent(ev){
+  switch(ev.type){
+    case "status": $("#err").innerHTML=`<div class="hint">${esc(ev.text)}</div>`; break;
+    case "agent": agent(ev.agent, ev.status, ev.ms!=null ? (ev.ms/1000).toFixed(2)+" s" : "");
+                  if(ev.agent==="retriever") agent("orchestrator","running"); break;
+    case "evidence": renderEvidence(ev.evidence); break;
+    case "token": answerText += ev.text; $("#answer").innerHTML = esc(answerText)+'<span class="cursor"></span>'; break;
+    case "answer_replaced": answerText = ev.answer; $("#answer").innerHTML = esc(answerText); break;
+    case "trace": $("#trace").insertAdjacentHTML("beforeend",
+        `<div><span class="t">${ev.t_s.toFixed(2)}s</span><span class="a">${esc(ev.agent)}</span><span><b>${esc(ev.decision)}</b> — ${esc(ev.why)}</span></div>`);
+        $("#trace").scrollTop=1e9; break;
+    case "claims": renderClaims(ev.claims, true); break;
+    case "claim": updateClaim(ev.claim); break;
+    case "final": finish(ev.result); break;
+    case "error": $("#err").innerHTML=`<div class="err">${esc(ev.text)}</div>`; break;
+  }
+}
+
+let claimMap = {};
+function renderClaims(claims, pending){
+  claimMap = {}; claims.forEach(c=>claimMap[c.id]=c);
+  drawClaims();
+}
+function updateClaim(c){ claimMap[c.id] = {...claimMap[c.id], ...c}; drawClaims(); }
+function drawClaims(){
+  const cs = Object.values(claimMap); if(!cs.length) return;
+  $("#claimsBox").innerHTML = `<table class="claims"><tr><th>#</th><th>Claim</th><th>Check</th><th>Result</th></tr>` +
+   cs.map(c=>{
+     const t=c.error_type || (c.status==="pending"?null:c.label);
+     const p=c.probs; const bar = p?`<div class="probs" title="entail ${p.entailment} · neutral ${p.neutral} · contra ${p.contradiction}"><i style="width:${p.entailment*100}%"></i><i style="width:${p.neutral*100}%"></i><i style="width:${p.contradiction*100}%"></i></div>`:"";
+     const how = c.status==="pending" ? "queued" : c.status==="unchecked" ? "skipped (budget)" :
+       (c.tier ? `Tier-${c.tier} NLI` : "Tier-0 heuristic");
+     return `<tr><td>${c.id+1}</td><td>${esc(c.text)}${c.reason&&c.error_type!=="SUPPORTED"?`<div class="hint">${esc(c.reason)}</div>`:""}</td>
+       <td class="hint">${how}<br>risk ${c.tier0.risk}${c.tier0.missing_numbers.length?`<br>missing: ${esc(c.tier0.missing_numbers.join(", "))}`:""}</td>
+       <td>${t?`<span class="tag T-${c.error_type||"UNCHECKED"}">${esc(TYPE_LABEL[c.error_type]||c.label)}</span>`:'<span class="hint">…</span>'}${bar}</td></tr>`;
+   }).join("") + "</table>";
+}
+
+function renderEvidence(ev, claims){
+  if(!ev.length){ $("#evidence").innerHTML='<span class="empty">No evidence retrieved.</span>'; return; }
+  const prem = new Set((claims||[]).flatMap(c=>c.premise.map(p=>p.text)));
+  $("#evidence").innerHTML = ev.map((e,i)=>{
+    let txt = esc(e.text); prem.forEach(p=>{ const ep=esc(p); if(ep.length>8) txt = txt.split(ep).join(`<mark>${ep}</mark>`); });
+    return `<div class="ev"><div class="meta"><span class="num">[${i+1}]</span><span>GR ${esc(e.gr_no||e.doc_id)}</span>
+      <span>${esc((e.department||"").slice(0,40))}</span><span>p. ${e.pages?e.pages.join("–"):"?"}</span><span>score ${e.score}</span></div>
+      <div class="txt" onclick="this.classList.toggle('open')">${txt}</div></div>`}).join("");
+}
+let lastEvidence = [];
+
+function finish(r){
+  last = r; clearInterval(timer); tick();
+  AG.forEach(a=>{ const el=$("#ag-"+a[0]); if(el && !el.className.includes("done")) el.className="agent "+(a[0]==="orchestrator"?"done":"skipped"); });
+  agent("orchestrator","done", (r.timing_ms.total/1000).toFixed(1)+" s total");
+  // highlighted answer
+  let html = esc(r.answer);
+  r.claims.forEach(c=>{ const e=esc(c.text.replace(/[.।]$/,"")); if(e.length>3 && html.includes(e))
+     html = html.replace(e, `<span class="claim T-${c.error_type}" title="${esc(TYPE_LABEL[c.error_type])}: ${esc(c.reason)}">${e}</span>`); });
+  $("#answer").innerHTML = r.abstained ? `<span class="hint">NOT_FOUND —</span> ${esc(r.verdict_mr)}` : html;
+  $("#verdict").innerHTML = `<span class="badge V-${r.verdict}">${esc(r.verdict_en)} · ${esc(r.verdict_mr)}</span>
+    <span class="metric">Risk<b>${r.risk}</b></span>
+    <span class="metric">Faithfulness<b>${r.faithfulness??"–"}</b></span>
+    <span class="metric">LLM confidence<b>${r.generator_confidence??"–"}</b></span>
+    <span class="metric">Plan<b>${r.plan??"–"}</b></span>
+    <span class="metric">Depth<b>${r.verification_depth}</b></span>` +
+    (r.notes.length?`<div class="hint" style="flex-basis:100%">${r.notes.map(esc).join(" · ")}</div>`:"");
+  renderClaims(r.claims); renderEvidence(lastEvidence, r.claims);
+  $("#dl").classList.remove("hide"); $("#go").disabled=false; health();
+}
+
+async function go(){
+  const query=$("#q").value.trim(); if(!query) return;
+  resetUI(); answerText=""; $("#go").disabled=true;
+  budget = parseFloat($("#budget").value)||null; t0=performance.now(); timer=setInterval(tick,200);
+  agent("orchestrator","running");
+  try{
+    const res = await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({query,policy:$("#policy").value,budget_s:budget,k:+$("#k").value,inject:$("#inject").value})});
+    if(!res.ok){ throw new Error((await res.json()).detail||res.statusText); }
+    const rd=res.body.getReader(), dec=new TextDecoder(); let buf="";
+    for(;;){ const {value,done}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true});
+      let i; while((i=buf.indexOf("\n\n"))>=0){ const line=buf.slice(0,i); buf=buf.slice(i+2);
+        if(line.startsWith("data: ")){ const ev=JSON.parse(line.slice(6)); if(ev.type==="evidence") lastEvidence=ev.evidence; onEvent(ev);} } }
+  }catch(e){ $("#err").innerHTML=`<div class="err">${esc(e.message)}</div>`; }
+  clearInterval(timer); $("#go").disabled=false;
+}
+
+function download(){
+  if(!last) return; const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({...last, evidence:lastEvidence},null,2)],{type:"application/json"}));
+  a.download=`audit_${last.id}.json`; a.click();
+}
+
+async function loadHistory(){
+  const h = await (await fetch("/api/history")).json();
+  $("#hist").innerHTML = h.length ? `<table class="t"><tr><th>Time</th><th>Question</th><th>Verdict</th><th>Risk</th><th>Faith.</th><th>Policy / plan</th><th>Total</th><th></th></tr>`+
+   h.map(r=>`<tr><td class="hint">${esc(r.time)}</td><td>${esc(r.query)}</td><td><span class="tag V-${r.verdict}">${r.verdict}</span></td><td>${r.risk}</td>
+   <td>${r.faithfulness??"–"}</td><td class="hint">${r.policy} / ${r.plan??"–"}</td><td>${r.total_s}s</td><td><a href="/api/report/${r.id}">json</a></td></tr>`).join("")+"</table>"
+   : '<span class="empty">No queries yet.</span>';
+}
+function kv(o){return `<table class="t">${Object.entries(o).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(typeof v==="object"?JSON.stringify(v):v)}</td></tr>`).join("")}</table>`}
+async function loadEval(){
+  const s = await (await fetch("/api/stats")).json();
+  $("#live").innerHTML = s.live ? [["Queries",s.live.n],["Mean total (s)",s.live.mean_total_s],
+     ["Mean generation (ms)",s.live.mean_stage_ms.generation],["Mean verification (ms)",s.live.mean_stage_ms.verification],
+     ...Object.entries(s.live.verdicts)].map(([k,v])=>`<div class="kpi"><b>${v}</b><span>${esc(k)}</span></div>`).join("")
+     : '<span class="empty">No live queries yet.</span>';
+  $("#bench").innerHTML = s.bench ? `<div class="md">${esc(s.bench_tables_md)}</div>` +
+     s.figures.filter(f=>f.startsWith("fig_")).map(f=>`<img class="fig" src="/results/${f}?${Date.now()}">`).join("") +
+     (s.bench.mock_nli?'<p class="err">These numbers were produced with MOCK NLI (plumbing test) — re-run without --mock-nli for real results.</p>':"")
+     : '<span class="empty">Run <code>python hallu_bench.py</code> to generate the main result tables.</span>';
+  $("#e2e").innerHTML = s.e2e ? kv(Object.fromEntries(Object.entries(s.e2e).filter(([k])=>k!=="policies_on_same_answers"))) +
+     `<h2 style="margin-top:14px">Same answers, different policies</h2>` +
+     `<table class="t"><tr><th>Policy</th><th>Verdicts</th><th>Claim flag rate</th><th>Mean verify ms</th><th>Faithfulness</th></tr>`+
+     s.e2e.policies_on_same_answers.map(p=>`<tr><td>${p.policy}</td><td>${esc(JSON.stringify(p.verdicts))}</td><td>${p.claim_flag_rate}</td><td>${p.mean_verify_ms}</td><td>${p.mean_faithfulness_in_scope}</td></tr>`).join("")+"</table>"
+     : '<span class="empty">Run <code>python evaluate_e2e.py</code>.</span>';
+}
+
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hide", s.id!=="tab-"+b.dataset.tab));
+  if(b.dataset.tab==="history") loadHistory(); if(b.dataset.tab==="eval") loadEval();
+});
+$("#go").onclick=go; $("#dlBtn").onclick=download;
+$("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)) go(); });
+resetUI(); $("#answer").innerHTML='<span class="empty">Ask a question to see an evidence-grounded answer with claim-level verification.</span>';
+$("#evidence").innerHTML='<span class="empty">—</span>';
+health(); examples();
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+[
+ {
+  "id": 1,
+  "query": "अंगणवाडी सेविकांना मानधन किती मिळते?",
+  "expected_doc_id": "202410041805201130",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 2,
+  "query": "What is the new honorarium of Anganwadi workers?",
+  "expected_doc_id": "202410041805201130",
+  "query_lang": "en",
+  "in_scope": true
+ },
+ {
+  "id": 3,
+  "query": "बिरसा मुंडा कृषि क्रांती योजनेत नवीन सिंचन विहिरीसाठी अनुदान किती आहे?",
+  "expected_doc_id": "202410011822063201",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 4,
+  "query": "लेक लाडकी योजनेसाठी निधी वितरण",
+  "expected_doc_id": "202512101218337430",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 5,
+  "query": "मुख्यमंत्री महिला सशक्तीकरण अभियान राबविणेबाबत काय निर्णय आहे?",
+  "expected_doc_id": "202310061552545830",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 6,
+  "query": "राजर्षि शाहू महाराज गुणवत्ता शिष्यवृत्ती योजनेत किती विद्यार्थ्यांची निवड होते?",
+  "expected_doc_id": "202206091634349822",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 7,
+  "query": "गोपीनाथ मुंडे ऊसतोड कामगार सानुग्रह अनुदान योजना",
+  "expected_doc_id": "202410101125221622",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 8,
+  "query": "Gopinath Munde sugarcane workers welfare corporation ex gratia grant scheme",
+  "expected_doc_id": "202410101125221622",
+  "query_lang": "en",
+  "in_scope": true
+ },
+ {
+  "id": 9,
+  "query": "मिशन शक्ती अंतर्गत वन स्टॉप सेंटरसाठी निधी",
+  "expected_doc_id": "202603251632053730",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 10,
+  "query": "कृषि यांत्रिकीकरण उप अभियान २०२४-२५ वार्षिक कृती आराखडा",
+  "expected_doc_id": "202405281705331401",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 11,
+  "query": "संजय गांधी निराधार व श्रावणबाळ योजनेतील अर्थसहाय्यात वाढ",
+  "expected_doc_id": "202307061137387522",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 12,
+  "query": "प्रधानमंत्री फसल विमा योजना पूरक अनुदान खरीप २०२३",
+  "expected_doc_id": "202503281447417001",
+  "query_lang": "mr",
+  "in_scope": true
+ },
+ {
+  "id": 13,
+  "query": "What is the capital of France?",
+  "expected_doc_id": null,
+  "query_lang": "en",
+  "in_scope": false
+ },
+ {
+  "id": 14,
+  "query": "भारत में कितनी नदियाँ हैं?",
+  "expected_doc_id": null,
+  "query_lang": "hi",
+  "in_scope": false
+ }
+]

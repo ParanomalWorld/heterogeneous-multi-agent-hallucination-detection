@@ -1,0 +1,11 @@
+{
+  "model": "intfloat/multilingual-e5-small",
+  "dim": 384,
+  "n_vectors": 6438,
+  "cleaning": {
+    "dropped_duplicate": 85,
+    "dropped_short": 3,
+    "input": 6526,
+    "kept": 6438
+  }
+}
